@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h> 
+#include <string.h>
 #include <curl/curl.h>
  
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *stream)
@@ -32,7 +33,45 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
  
   return realsize;
 }
-
+char* replaceRes(char* string){
+  // Because we are removing the 1920x1080 we know the new string will not be larger than the old
+  char* newString = malloc(strlen(string) * sizeof(char));
+  //search for the 1920
+  int index = -1;
+  
+  for(int i = 0; i < strlen(string); i++){
+    if(string[i] == '1' && string[i+1] == '9' && string[i+2] == '2' && string[i+3] == '0'){
+      index = i;
+      break;
+    }
+  }
+  if(index != -1){
+    int count = 0;
+    while(count < index){
+      newString[count] = string[count];
+      count++;
+    }
+    //Add in the uhd
+    newString[count] = 'U';
+    count++;
+    newString[count] = 'H';
+    count++;
+    newString[count] = 'D';
+    count++;  
+    // Add in the rest after the 1920x1080
+    while(count <strlen(string)){
+      newString[count] = string[count+6];
+      count++;
+    }
+    char* result = malloc(count * sizeof(char));
+    for(int i = 0; i<count;i++){
+      result[i] = newString[i];
+    }
+    return result;
+  }
+  return string;
+    //for
+}
 char* getURLFromJson(char* json, size_t json_length){
   bool foundURL = false;
   bool inURL = false;
@@ -54,8 +93,8 @@ char* getURLFromJson(char* json, size_t json_length){
         i++;
       }
       if(inURL){
-        if(json[i] == '"'){
-          url[urlSize] = "\0";
+        if(json[i] == '&'){
+          url[urlSize] = (char)0;
           urlSize += 1;
           inURL = false;
           break;
@@ -68,10 +107,9 @@ char* getURLFromJson(char* json, size_t json_length){
     }
   }
   // If we have found a url
-  char* finalURL = malloc(urlSize * sizeof(char));
-  for(int i = 0; i < urlSize+1; i++){
+  char* finalURL = malloc((urlSize+1) * sizeof(char));
+  for(int i = 0; i < urlSize; i++){
     finalURL[i] = url[i]; 
-  
   } 
   free(url);
   return finalURL;
@@ -97,16 +135,36 @@ FILE getTodayPhoto(char* region){
   /* send all data to this function  */
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
   curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
-
   curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl-agent/1.0");
   res = curl_easy_perform(curl_handle);
   
 
   char* url = getURLFromJson(chunk.memory, chunk.size);
+  // Get the UHD version of the URL
+  char* uhdUrl = replaceRes(url);
+  // Add the bing bit to the start
+  char* bingPrefix = "https://www.bing.com";
+  char* fullUHDurl = malloc((strlen(bingPrefix) + strlen(uhdUrl) + 1) * sizeof(char));
+  for(int i = 0; i < strlen(bingPrefix) + strlen(uhdUrl); i++){
+    if(i<strlen(bingPrefix)){
+      fullUHDurl[i] = bingPrefix[i];
+    }
+    else{
+      fullUHDurl[i] = uhdUrl[i - strlen(bingPrefix)];
+    }
+  }
+  fullUHDurl[strlen(bingPrefix) + strlen(uhdUrl)] = (char)0;
+  free(uhdUrl);
+  //free(bingPrefix);
+  printf("whole uhd url is %s \n", fullUHDurl);  
+  // Getting the photo from the url
+
+
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url);
 
   curl_easy_cleanup(curl_handle);
   curl_global_cleanup();
-  printf("%s", url);  
+  
 }
 
 int main()
