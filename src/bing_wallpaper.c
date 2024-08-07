@@ -233,7 +233,11 @@ FILE getTodayPhoto(char *region)
     // If bing directory doesn't exist create it
     struct stat st;
     if(stat("images/bing",&st) == -1) {
-           mkdir("images/bing");
+        //Check if images exists
+        if(stat("images",&st) == -1){
+            mkdir("images");
+        }
+        mkdir("images/bing");
     }
     /* open the file */
     FILE *pagefile = fopen(pagefilename, "wb");
