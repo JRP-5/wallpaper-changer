@@ -19,7 +19,7 @@ pt-BR
 
 int main()
 {
-  getTodayPhoto("en-US");
+  getTodayPhoto("pt-BR");
   // curl_global_init(CURL_GLOBAL_ALL);
   // curl_global_cleanup();
   // while (1){

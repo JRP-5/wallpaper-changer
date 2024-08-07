@@ -171,8 +171,14 @@ FILE getTodayPhoto(char *region)
     struct MemoryStruct chunk;
     chunk.memory = malloc(1); /* grown as needed by the realloc above */
     chunk.size = 0;
-
-    curl_easy_setopt(curl_handle, CURLOPT_URL, "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=en-US");
+    char *jsonURL = "https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=";
+    //Add in the region to our request
+    char *jsonURLRegion = malloc((strlen(jsonURL) + strlen(region) + 1) * sizeof(char));
+    strcpy(jsonURLRegion, "");
+    strcat(jsonURLRegion, jsonURL);
+    strcat(jsonURLRegion, region);
+    jsonURLRegion[strlen(jsonURL) + strlen(region)] = (char)0;
+    curl_easy_setopt(curl_handle, CURLOPT_URL, jsonURLRegion);
 
     /* Switch on full protocol/debug output while testing */
     // curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
@@ -224,7 +230,6 @@ FILE getTodayPhoto(char *region)
     strcat(pagefilename, region);
     strcat(pagefilename, ".jpg");
     pagefilename[strlen(imagesBing) + 17] = (char)0;
-    puts(pagefilename);
     // If bing directory doesn't exist create it
     struct stat st;
     if(stat("images/bing",&st) == -1) {
